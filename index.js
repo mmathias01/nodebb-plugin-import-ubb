@@ -39,30 +39,31 @@ var logPrefix = '[nodebb-plugin-import-ubb]';
 		var prefix = Exporter.config('prefix');
 		var startms = +new Date();
 		var query = 'SELECT '
-				+ prefix + 'USERS.USER_ID as _uid, '
-				+ prefix + 'USERS.USER_LOGIN_NAME as _username, '
-				+ prefix + 'USERS.USER_DISPLAY_NAME as _alternativeUsername, '
-				+ prefix + 'USERS.USER_REGISTRATION_EMAIL as _registrationEmail, '
-				+ prefix + 'USERS.USER_MEMBERSHIP_LEVEL as _level, '
-				+ prefix + 'USERS.USER_REGISTERED_ON as _joindate, '
-				+ prefix + 'USERS.USER_IS_banned as _banned, '
-				+ prefix + 'USER_PROFILE.USER_REAL_EMAIL as _email, '
-				+ prefix + 'USER_PROFILE.USER_SIGNATURE as _signature, '
-				+ prefix + 'USER_PROFILE.USER_HOMEPAGE as _website, '
-				+ prefix + 'USER_PROFILE.USER_OCCUPATION as _occupation, '
-				+ prefix + 'USER_PROFILE.USER_LOCATION as _location, '
-				+ prefix + 'USER_PROFILE.USER_AVATAR as _picture, '
-				+ prefix + 'USER_PROFILE.USER_TITLE as _badge, '
-				+ prefix + 'USER_PROFILE.USER_RATING as _reputation, '
-				+ prefix + 'USER_PROFILE.USER_TOTAL_RATES as _profileviews, '
-				+ prefix + 'USER_PROFILE.USER_BIRTHDAY as _birthday, '
-				+ prefix + 'BANNED_USERS.USER_ID as _banned, '
-				+ prefix + 'USER_GROUPS.GROUP_ID as _gid '
+				+ prefix + 'USERS.id as _uid, '
+				+ prefix + 'USERS.username as _username, '
+				//+ prefix + 'USERS.USER_DISPLAY_NAME as _alternativeUsername, '
+				//+ prefix + 'USERS.email as _registrationEmail, '
+				//+ prefix + 'USERS.USER_MEMBERSHIP_LEVEL as _level, '
+				+ prefix + 'USERS.registered as _joindate, '
+				+ prefix + 'BANS.id as _banned, '
+				+ prefix + 'USERS.email as _email, '
+				+ prefix + 'USERS.signature as _signature, '
+				+ prefix + 'USERS.url as _website, '
+				+ prefix + 'USERS.title as _occupation, '
+				+ prefix + 'USERS.location as _location, '
+				//+ prefix + 'USER_PROFILE.USER_AVATAR as _picture, '
+				//+ prefix + 'USER_PROFILE.USER_TITLE as _badge, '
+				//+ prefix + 'USER_PROFILE.USER_RATING as _reputation, '
+				//+ prefix + 'USER_PROFILE.USER_TOTAL_RATES as _profileviews, '
+				//+ prefix + 'USER_PROFILE.USER_BIRTHDAY as _birthday, '
+				//+ prefix + 'BANNED_USERS.USER_ID as _banned, '
+				+ prefix + 'USERS.group_id as _gid, '
+				+ prefix + 'USERS.last_comment as _lastposttime,'
+            	+ prefix + 'USERS.last_visit as _lastonline '
 
 				+ 'FROM ' + prefix + 'USERS '
-				+ 'JOIN ' + prefix + 'USER_PROFILE ON ' + prefix + 'USER_PROFILE.USER_ID = ' + prefix + 'USERS.USER_ID '
-				+ 'LEFT JOIN ' + prefix + 'BANNED_USERS ON ' + prefix + 'BANNED_USERS.USER_ID = ' + prefix + 'USERS.USER_ID '
-				+ 'LEFT JOIN ' + prefix + 'USER_GROUPS ON ' + prefix + 'USER_GROUPS.USER_ID = ' + prefix + 'USERS.USER_ID '
+
+				+ 'LEFT JOIN ' + prefix + 'BANS ON ' + prefix + 'BANS.username = ' + prefix + 'USERS.username '
 				+ (start >= 0 && limit >= 0 ? 'LIMIT ' + start + ',' + limit : '');
 
 
@@ -84,6 +85,8 @@ var logPrefix = '[nodebb-plugin-import-ubb]';
 					rows.forEach(function(row) {
 						// from unix timestamp (s) to JS timestamp (ms)
 						row._joindate = ((row._joindate || 0) * 1000) || startms;
+                        row._lastposttime = ((row._lastposttime || 0) * 1000) || startms;
+                        row._lastonline = ((row._lastonline || 0) * 1000) || startms;
 
 						// lower case the email for consistency
 						row._email = (row._email || '').toLowerCase();
@@ -159,11 +162,13 @@ var logPrefix = '[nodebb-plugin-import-ubb]';
 		var prefix = Exporter.config('prefix');
 		var startms = +new Date();
 		var query = 'SELECT '
-				+ prefix + 'FORUMS.FORUM_ID as _cid, '
-				+ prefix + 'FORUMS.FORUM_TITLE as _name, '
-				+ prefix + 'FORUMS.FORUM_DESCRIPTION as _description, '
-				+ prefix + 'FORUMS.FORUM_CREATED_ON as _timestamp '
-				+ 'FROM ' + prefix + 'FORUMS '
+				+ prefix + 'FORUMS.id as _cid, '
+				+ prefix + 'FORUMS.forum_name as _name, '
+				+ prefix + 'FORUMS.forum_desc as _description, '
+				//+ prefix + 'FORUMS.FORUM_CREATED_ON as _timestamp '
+        	    + prefix + 'FORUMS.color as _bgColor, '
+            	+ prefix + 'FORUMS.icon as _icon '
+        		+ 'FROM ' + prefix + 'FORUMS '
 				+ (start >= 0 && limit >= 0 ? 'LIMIT ' + start + ',' + limit : '');
 
 
@@ -205,19 +210,19 @@ var logPrefix = '[nodebb-plugin-import-ubb]';
 		var startms = +new Date();
 		var query =
 				'SELECT '
-				+ prefix + 'TOPICS.TOPIC_ID as _tid, '
-				+ prefix + 'TOPICS.TOPIC_SUBJECT as _title, '
+				+ prefix + 'TOPICS.id as _tid, '
+				+ prefix + 'TOPICS.subject as _title, '
 				+ prefix + 'TOPICS.FORUM_ID as _cid, '
-				+ prefix + 'TOPICS.USER_ID as _uid, '
-				+ prefix + 'POSTS.POST_BODY as _content, '
-				+ prefix + 'TOPICS.TOPIC_VIEWS as _viewcount, '
-				+ prefix + 'TOPICS.TOPIC_CREATED_TIME as _timestamp, '
-				+ prefix + 'TOPICS.TOPIC_IS_STICKY as _pinned, '
-				+ prefix + 'POSTS.POST_LAST_EDITED_TIME as _edited, '
-				+ prefix + 'POSTS.POST_POSTER_IP as _ip '
-				+ 'FROM ' + prefix + 'TOPICS '
-				+ 'JOIN ' + prefix + 'POSTS ON ' + prefix + 'POSTS.TOPIC_ID=' + prefix + 'TOPICS.TOPIC_ID '
-				+ 'AND ' + prefix + 'POSTS.POST_PARENT_ID=0 '
+				+ prefix + 'POSTS.commenter_id as _uid, '
+				+ prefix + 'POSTS.message as _content, '
+				+ prefix + 'TOPICS.num_views as _viewcount, '
+				+ prefix + 'TOPICS.commented as _timestamp, '
+				+ prefix + 'TOPICS.pinned as _pinned, '
+				+ prefix + 'TOPICS.closed as _locked, '
+				+ prefix + 'POSTS.edited as _edited, '
+				+ prefix + 'POSTS.commenter_ip as _ip '
+				+ 'FROM ' + prefix + 'THREADS as TOPICS '
+				+ 'JOIN ' + prefix + 'COMMENTS as POSTS  ON ' + prefix + 'POSTS.id=' + prefix + 'TOPICS.first_comment_id'
 				+ (start >= 0 && limit >= 0 ? 'LIMIT ' + start + ',' + limit : '');
 
 		if (!Exporter.connection) {
@@ -258,19 +263,17 @@ var logPrefix = '[nodebb-plugin-import-ubb]';
 		var prefix = Exporter.config('prefix');
 		var startms = +new Date();
 		var query =
-				'SELECT POST_ID as _pid, '
-				+ 'USER_ID as _uid, '
-				+ 'TOPIC_ID as _tid, '
-				+ 'POST_BODY as _content, '
-				+ 'POST_POSTED_TIME as _timestamp, '
-				+ 'POST_PARENT_ID as _toPid, '
-				+ 'POST_LAST_EDITED_TIME as _edited, '
-				+ 'POST_POSTER_IP as _ip '
-
-				+ 'FROM ' + prefix + 'POSTS '
-					// this post cannot be a its topic's main post, it MUST be a reply-post
-					// see https://github.com/akhoury/nodebb-plugin-import#important-note-on-topics-and-posts
-				+ 'WHERE POST_PARENT_ID > 0 '
+				'SELECT comments.id as _pid, '
+				+ 'commenter_id as _uid, '
+				+ 'thread_id as _tid, '
+				+ 'message as _content, '
+				+ 'comments.commented as _timestamp, '
+				+ 'edited as _edited, '
+				+ 'commenter_ip as _ip, '
+				+ 'THREADS.first_comment_id as _first_comment_id '
+				+ 'FROM ' + prefix + 'COMMENTS '
+            	+ 'LEFT JOIN ' + prefix + 'THREADS ON ' + prefix + 'THREADS.first_comment_id=' + prefix + 'COMMENTS.id'
+				+ ' WHERE THREADS.first_comment_id IS NULL '
 				+ (start >= 0 && limit >= 0 ? 'LIMIT ' + start + ',' + limit : '');
 
 
@@ -423,19 +426,19 @@ var logPrefix = '[nodebb-plugin-import-ubb]';
 				Exporter.getUsers(next);
 			},
 			function(next) {
-				Exporter.getGroups(next);
+				next();//Exporter.getGroups(next);
 			},
 			function(next) {
-				Exporter.getCategories(next);
+              Exporter.getCategories(next);
 			},
 			function(next) {
-				Exporter.getTopics(next);
+               Exporter.getTopics(next);
 			},
 			function(next) {
-				Exporter.getPosts(next);
+               Exporter.getPosts(next);
 			},
 			function(next) {
-				Exporter.getMessages(next);
+                next();//Exporter.getMessages(next);
 			},
 			function(next) {
 				Exporter.teardown(next);
